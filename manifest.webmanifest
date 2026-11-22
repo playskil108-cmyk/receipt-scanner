@@ -1,0 +1,17 @@
+{
+  "name": "영수증 스캐너",
+  "short_name": "영수증",
+  "description": "영수증 사진의 영역을 맞추고 그림자와 명암을 정리해 청구용 이미지로 저장합니다.",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#EDF0F2",
+  "theme_color": "#0E6B63",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

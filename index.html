@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>영수증 스캐너</title>
+<meta name="description" content="영수증 사진의 영역을 맞추고 그림자와 명암을 정리해 청구용 이미지로 저장합니다.">
+<meta name="theme-color" content="#0E6B63">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="영수증 스캐너">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="app" id="app" data-screen="home">
+
+  <!-- 홈 -->
+  <section class="screen home" id="scrHome">
+    <div class="home-body">
+      <img class="home-icon" src="icons/icon-192.png" alt="" width="72" height="72">
+      <h1>영수증 스캐너</h1>
+      <p class="lead">영수증을 찍으면 반듯하게 펴고 그림자를 지워 청구용 이미지로 저장합니다.</p>
+      <ul class="tips">
+        <li>영수증 네 귀퉁이가 모두 화면에 들어오게 찍어 주세요.</li>
+        <li>구겨진 영수증은 손으로 한 번 펴고 찍으면 글자가 또렷합니다.</li>
+        <li>사진은 이 기기 안에서만 처리되고 어디에도 올라가지 않습니다.</li>
+      </ul>
+    </div>
+    <div class="home-actions">
+      <label class="btn primary big">카메라로 촬영<input type="file" id="inCamera" accept="image/*" capture="environment"></label>
+      <label class="btn big">앨범에서 선택<input type="file" id="inFile" accept="image/*"></label>
+    </div>
+  </section>
+
+  <!-- 작업 화면(영역 · 보정 · 저장 공용) -->
+  <section class="screen work" id="scrWork">
+    <header class="bar">
+      <button class="icon-btn" id="btnBack" aria-label="뒤로">
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <ol class="steps" aria-label="진행 단계">
+        <li data-step="crop">영역</li>
+        <li data-step="adjust">보정</li>
+        <li data-step="save">저장</li>
+      </ol>
+      <span class="bar-spacer"></span>
+    </header>
+
+    <div class="stage" id="stage">
+      <div class="cropwrap" id="cropView">
+        <canvas id="srcCv"></canvas>
+        <svg id="overlay" aria-label="영수증 모서리 조절"></svg>
+      </div>
+      <canvas id="outCv"></canvas>
+      <canvas id="loupe" width="240" height="240" aria-hidden="true"></canvas>
+      <div class="stage-hint" id="stageHint"></div>
+    </div>
+
+    <!-- 영역 단계 -->
+    <div class="panel" id="pCrop">
+      <div class="tool-row">
+        <button class="tool" id="btnRotate">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 1-2.3-5.6M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          회전</button>
+        <button class="tool" id="btnDetect">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="8" y="7" width="8" height="10" rx="1" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          자동 감지</button>
+        <button class="tool" id="btnFull">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          전체</button>
+      </div>
+      <button class="btn primary" id="btnToAdjust">다음: 보정</button>
+    </div>
+
+    <!-- 보정 단계 -->
+    <div class="panel" id="pAdjust">
+      <div class="seg" role="radiogroup" aria-label="색상 모드">
+        <label><input type="radio" name="mode" value="color" id="mColor">컬러</label>
+        <label><input type="radio" name="mode" value="gray" id="mGray">그레이</label>
+        <label><input type="radio" name="mode" value="bw" id="mBw">흑백 문서</label>
+      </div>
+      <div class="checks">
+        <label><input type="checkbox" id="optShadow">그림자 제거</label>
+        <label><input type="checkbox" id="optSharpen">글자 선명하게</label>
+      </div>
+      <div class="slider"><label for="slBright">밝기</label><input type="range" id="slBright" min="-60" max="60" step="1"><output id="oBright"></output></div>
+      <div class="slider"><label for="slContrast">대비</label><input type="range" id="slContrast" min="-50" max="80" step="1"><output id="oContrast"></output></div>
+      <div class="slider" id="rowBw"><label for="slBw">글자 굵기</label><input type="range" id="slBw" min="2" max="30" step="1"><output id="oBw"></output></div>
+      <div class="row">
+        <button class="btn" id="btnReset">기본값</button>
+        <button class="btn primary grow" id="btnToSave">다음: 저장</button>
+      </div>
+    </div>
+
+    <!-- 저장 단계 -->
+    <div class="panel" id="pSave">
+      <div class="fields">
+        <label class="field">날짜<input type="date" id="fDate"></label>
+        <label class="field">형식<select id="fFmt"><option value="jpg">JPG</option><option value="png">PNG</option></select></label>
+        <label class="field wide">사용처<input type="text" id="fStore" placeholder="예: 거래처 식대" enterkeyhint="next" autocomplete="off"></label>
+        <label class="field wide">금액(원)<input type="text" id="fAmount" inputmode="numeric" placeholder="예: 20500" enterkeyhint="done" autocomplete="off"></label>
+      </div>
+      <div class="fname" id="fname" aria-label="저장될 파일 이름"></div>
+      <button class="btn primary" id="btnShare">사진에 저장 · 공유</button>
+      <div class="row">
+        <button class="btn" id="btnDownload">파일로 다운로드</button>
+        <button class="btn" id="btnNew">새 영수증</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="busy" id="busy" hidden><div class="spinner"></div><p id="busyText">처리 중…</p></div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+</div>
+
+<script src="core.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
